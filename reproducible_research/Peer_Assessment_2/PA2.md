@@ -54,7 +54,7 @@ sd$YEAR <- as.numeric(format(as.Date(sd$BGN_DATE, format = "%m/%d/%Y %H:%M:%S"),
 hist(sd$YEAR, breaks=50, xlab="Year", main="Event Entries by Year")
 ```
 
-![](PeerAss2_files/figure-html/unnamed-chunk-1-1.png)<!-- -->
+![](PA2_files/figure-html/unnamed-chunk-1-1.png)<!-- -->
 
 The graph above shows the total number of cases reported per year. It shows an increase in cases entered over the yaers. In particular, the trend increases significantly from 1990 to 2000. This could be due to emphasis given to acquiring this kind of data and to advances in data acquisition and storing capabilities. Data from 1990-2011 was considered for purposes of this analysis.  
 
@@ -336,7 +336,7 @@ crop.plot <- qplot(EVTYPE, data=crop.top15, weight = CROPDMGTOT) + geom_bar() + 
 grid.arrange(fat.plot, inj.plot, ncol=2)
 ```
 
-![](PeerAss2_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
+![](PA2_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
 
 The graph above shows the number of fatalities and injuries from 1990 until 2011. Excessive heat and tornadoes have the highest number of fatalities while tornadoes have the highest number of injuries.
 
@@ -375,7 +375,7 @@ When examing injuries related to severe weather, tornados are responsible for **
 grid.arrange(prop.plot, crop.plot, ncol=2)
 ```
 
-![](PeerAss2_files/figure-html/unnamed-chunk-7-1.png)<!-- -->
+![](PA2_files/figure-html/unnamed-chunk-7-1.png)<!-- -->
 
 The graph above shows the damage caused in US Dollars by severe weather events from 1990 until 2011. As can be seen, floods causes the greatest economic damage to property while drought causes the most damage to crops.   
 
