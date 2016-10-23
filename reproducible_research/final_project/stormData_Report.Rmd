@@ -1,0 +1,308 @@
+---
+title: 'Exploring Health and Economic Impact of Severe Weather Events in the US'
+author: "Juan Agustin Melendez"
+date: "July 24, 2015"
+output: 
+  html_document:
+    keep_md: true
+---
+
+## Introduction
+This report explores the StormData dataset as part of the Reproducible Research course of the Data Science Specialization provided by Coursera and Johns Hopkins University. The report attempt to identify which severe weather events has the highest impact in public health by analysing the rate at which these types of events causes injuries and fatalities. The economic impact of these events is also explored by analysing the damage caused to property and crop in terms of US dollars. The data was provided by the National Oceanic and Atmospheric Administration (NOAA) and contains data for severe weather events in the US from 1950-2011. 
+
+A preliminary analysis of the data demonstrates that excessive heat and tornadoes have the highest anual rate of fatalities. Tornadoes have the highest rate of injuries followed by excessive heat and floods. Historically floods and droughts has caused the most damage to property and crop respectively. Nonetheless, hurricanes/typhoons have the highest rate of property damage and river floods have the highest rate of crop damage in the US. 
+
+### Initial Exploration of Data
+
+From a histogram of the frequency of cases recorded per year, it can be seen that in the mid 1990s there is a significant increase in cases recorded. The number of cases approximately doubled in 1995 compared to 1990. Prior to 1993, the only weather event types recorded in the data were tornadoes, thunderstorm winds, and hail. In 1993 the number of unique weather event recorded increased to 40 from only 3 in the previous 10 years. Tornadoes were the only weather event recorded from 1950 to 1983. Below is a plot of cases recorded per year for the entire dataset. 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(dplyr)
+library(scales)
+
+
+# file <- "repdata-data-StormData.csv.bz2"
+# storm.data <- read.csv(bzfile(file), header = TRUE, stringsAsFactors = FALSE)
+# dim(storm.data)
+# names(storm.data)
+# # Subsetting the columns of interest
+# col.index <- c("BGN_DATE", "EVTYPE", "INJURIES", "FATALITIES", "PROPDMG","PROPDMGEXP", "CROPDMG", "CROPDMGEXP")
+# storm.data.small <- storm.data[, col.index]
+# 
+# #Creating a column for the entry year.  
+# storm.data.small$YEAR <- as.numeric(format(as.Date(storm.data.small$BGN_DATE, format = "%m/%d/%Y %H:%M:%S"), "%Y"))
+# storm.data.small$EVTYPE <- toupper(storm.data.small$EVTYPE)
+# storm.data.small$PROPDMGEXP <- toupper(storm.data.small$PROPDMGEXP)
+# storm.data.small$CROPDMGEXP <- toupper(storm.data.small$CROPDMGEXP)
+
+#setwd("/Users/Tin/Desktop/rcoursera/ReproRes/PA2/")
+storm.data.small <- readRDS("storm_small.Rds")
+p1 <- ggplot(storm.data.small, aes(x = YEAR)) + xlab("Year") + ylab("Frequency") + geom_histogram(bins = 30, binwidth = 1,  color = "black", fill = "cornflowerblue", show.legend = FALSE) + ggtitle("Cases Recorded by Year") 
+p1
+```
+
+```{r echo=FALSE}
+# Coutning total fatalities 
+tornado_totals <- storm.data.small %>%
+  select(Event = EVTYPE, FATALITIES, INJURIES) %>%
+  filter(Event == "TORNADO" | Event == "TORNADOES") %>%
+  summarise(fatalities = sum(FATALITIES), 
+            injuries = sum(INJURIES))
+
+tornado_pre_1993 <- storm.data.small %>%
+  select(YEAR, Event = EVTYPE,  FATALITIES, INJURIES) %>%
+  filter(YEAR < 1993 & Event == "TORNADO") %>%
+  summarise(fatalities = sum(FATALITIES), 
+            injuries = sum(INJURIES))
+tornado_rate <- storm.data.small %>%
+  select(Event = EVTYPE, FATALITIES, INJURIES) %>%
+  filter(Event == "TORNADO" | Event == "TORNADOES") %>%
+  summarise(fatality_rate = sum(FATALITIES)/length(1950:2011), injury_rate = sum(INJURIES)/length(1950:2011))
+tornado_rate <- round(tornado_rate)
+
+```
+
+If the entire dataset was to be considered, tornadoes would have the highest number of fatalities and injuries recorded having approximately 5600 fatalities and over 90K injuries from 1950-2011. These totals correspond to a rate of `r tornado_rate$fatality_rate` fatalities and `r tornado_rate$injury_rate` injuries per year. These totals are for event type recorded as "tornado" or "tornadoes" solely. How inconsistencies in data entry in the EVTYPE variable are handled is explained in the next section of this analysis. The proportions of fatalities and injuries caused by tornadoes in the years prior to 1993 are summarized below.
+
+```{r echo=FALSE, comment=NA, fig.align='left', fig.height=2, fig.width=2}
+tornado_percent_pre_1993 <- round(tornado_pre_1993/tornado_totals*100, 1)
+tornado_table <- data.frame(t(rbind(tornado_pre_1993, tornado_totals, tornado_percent_pre_1993)))
+names(tornado_table) <- c("Pre-1993", "Overall", "Proportion (%)")
+tornado_table
+```
+
+Fatalities and injuries caused by tornadoes  prior to 1993 correspond to 71% and 75% of the total fatalities and injuries caused by tornadoes in the dataset. Due to the lack of prelevance of other severe weather events in the dataset prior to 1993, it is necessary to perform an analysis for the later years when data is available for a wider range of weather event types. The later part of this analysis will focus on a subset of the data for the years 1993-2011. 
+
+### Discrepancies in Data Entry
+There are inconsistencies in data entry in several of the variables used in this analysis. Based on the code book provided for the data, CROPDMGEXP and PROPDMGEXP columns are supposed to contain only the letters "K", "M", and "B" (for thousands, millions, and billions respectively). When examining these columns, other characters were found including numbers and punctuation marks. When calculating the total damage to property and crop in US dollars, only cases in which the CROPDMGEXP and PROPDMGEXP variables were correctly entered were exponentiated accordingly to reflect the value provided. All the other cases were not exponentiated by any factor and solely the value provided in the CROPDMG and PROPDMG columns were used. The only exception that was considered is the letter "H" (appearing only on the PROPDMGEXP column) which could be assumed to be hundreads.
+
+It is also worth noting that only 48 EVTYPE were described in the code book but the EVTYPE column has a total of 898 unique entries, many of which were not explicitly listed as weather events in the code book. Some of these are duplicates of the same category entered in different ways or contain multiple categories in a single entry (e.g. "TORNDADO/TSTM"). For purposes of this analysis, the EVTYPE column was not manipulated to avoid making assumption that could potentially introduce more uncertainty into the data. Nonetheless, an analysis is performed below to determine if inconsistencies in data entry produced major variabilty in the results.
+
+```{r echo=FALSE}
+# Returns values for exponentiation  
+fix_EXP <- function(x) {
+  if (x == "H") return(2)
+  if (x == "K") return(3)
+  if (x == "M") return(6)
+  if (x == "B") return(9)
+  else return(0)
+}
+
+# Creating a numeric vector based on the PROPDMGEXP column.   
+storm.data.small$PROPDMG_EXP <- sapply(storm.data.small$PROPDMGEXP, fix_EXP, USE.NAMES = FALSE)
+# Creating new column for total property damage in US dollars.  
+storm.data.small$PROPDMG_TOT <- storm.data.small$PROPDMG*10^storm.data.small$PROPDMG_EXP
+
+# Creating a numeric vector based on the CROPDMGEXP column.   
+storm.data.small$CROPDMG_EXP <- sapply(storm.data.small$CROPDMGEXP, fix_EXP, USE.NAMES = FALSE)
+#Creating new column for total crop damage.  
+storm.data.small$CROPDMG_TOT <- storm.data.small$CROPDMG*10^storm.data.small$CROPDMG_EXP  
+```
+
+### Impact on Health
+The charts below show fatality and injury rates for fifteen severe weather events with the highest rates from 1993-2011. In total, excessive heat has caused the most fatalities being responsible for approximately 1900 fatalities at a rate of approximately 100 fatalities per year. Tornadoes have the second highest total fatality count having approximatedly 1600 fatalities and a rate of 85 fatalities per year. Tornadoes has the highest annual injury rate at approximately 1200 injuries per year and is almost four times the rate compared to the event with second most highest annual injury rate.   
+
+```{r echo=FALSE, comment=NA}
+# Determine total fatality for all events from 1993-2011
+tot_fatality <- storm.data.small %>%
+  filter(YEAR > 1992) %>%
+  select(Event = EVTYPE, FATALITIES) %>%
+  group_by(Event) %>%
+  summarise(total_fatalities = sum(FATALITIES)) %>%
+  filter(total_fatalities > 0) %>%
+  arrange(desc(total_fatalities))
+
+fatality_rate <- storm.data.small %>%
+  filter(YEAR > 1992) %>%
+  select(Event = EVTYPE, FATALITIES) %>%
+  group_by(Event) %>%
+  summarise(Rate = sum(FATALITIES)/length(1993:2011)) %>%
+  filter(Rate > 0) %>%
+  arrange(desc(Rate))
+
+# Creating subset of the top 15 events with highest injurt rate.  
+fat.top15 <- fatality_rate[1:15,]
+fat.top15$Event <- factor(fat.top15$Event, levels=fat.top15$Event, ordered = TRUE)
+
+# Fatality plots
+fat.plot <- qplot(Event, data=fat.top15, weight = Rate, xlab = NULL) + geom_bar() + theme(axis.text.x = element_text(angle = 50, hjust = 1)) + ylab("Fatality Rate") + 
+ggtitle("Annual Fatility Rate")  
+
+# Calculating injury rate for all events from 1993-2011.  
+injury_rate <- storm.data.small %>%
+  filter(YEAR > 1992) %>%
+  select(Event = EVTYPE, INJURIES) %>%
+  group_by(Event) %>%
+  summarise(Rate = sum(INJURIES)/length(1993:2011)) %>%
+  filter(Rate > 0) %>%
+  arrange(desc(Rate))
+
+# Creating subset of the top 15 events with highest injurt rate.  
+inj.top15 <- injury_rate[1:15,]
+inj.top15$Event <- factor(inj.top15$Event, levels=inj.top15$Event, ordered = TRUE)
+
+# Bar plot for top 15 events with the highest injury rates.  
+inj.plot <- qplot(Event, data=inj.top15, weight = Rate, xlab = NULL) + geom_bar() + theme(axis.text.x = element_text(angle = 50, hjust = 1)) + ylab("Injury Rate") +
+  ggtitle("Annual Injury Rate")
+```
+
+```{r echo=FALSE, warning=FALSE, fatality_plot}
+grid.draw(cbind(ggplotGrob(fat.plot), ggplotGrob(inj.plot)))
+```
+
+Discrepancies in entries in the EVTYPE column explained in the previous section can be observed in the charts above. As can be seen, there are four different instances of heat related weather events just in the top fifteen fatality rate chart. There are also instances where tornadoes and TSTM appear together as one entry and others where thunderstorm is abbreviated as TSTM. The same is observed throughout the dataset for other categories entered in the EVTYPE column. To evaluate the impact of these discrepancies, four different groups were created (Heat, Tornado/TSTM, Flood, and Other) encompassing four of the categories with the highest rates and one group for all the other categories. These groups were formed depending on wether key words appeared in each particular entry in the EVTYPE column.  Total sums were calculated for each group and new rates were calculated for the categories Heat, Tornado/TSTM, and Flood. These rates were analyzed to determine if different results were obtained by lumping the catefories in EVTYPE columns into groups. The chart below shows the proportion of total fatalities and injuries each group had within the dataset.  
+
+```{r echo=FALSE, warning=FALSE, fig.height=3.5, fig.width= 8, pie_chart}
+# Used to create a groups based on their EVTYPE
+factor_EVTYPE <- function(x){
+  if (length(grep("TORNADO|TORNADOES|TSTM|THUNDERSTORM", x)) > 0){
+    return("Tornado/TSTM")}
+  else if (length(grep("HEAT", x)) > 0) return("Heat")
+  else if (length(grep("FLOOD", x)) > 0) return("Flood")
+  else return("Other")
+}
+
+# Calculate total number of fatalities per group.  
+nfat_totals <- storm.data.small %>%
+  filter(YEAR > 1992) %>%
+  select(Event = EVTYPE, FATALITIES) %>%
+  group_by(Event) %>%
+  summarise(num_fatalities = sum(FATALITIES)) %>%
+  filter(num_fatalities > 0) %>%
+  rowwise() %>%
+  mutate(type = factor_EVTYPE(Event)) %>%
+  group_by(type) %>%
+  summarise(fatalities = sum(num_fatalities))
+
+# Pie chart 1
+p2 <- ggplot(transform(transform(nfat_totals, fatalities=fatalities/sum(fatalities)), labPos=cumsum(fatalities)-fatalities/2), 
+       aes(x="", y = fatalities, fill = type)) + xlab(NULL) + ylab(NULL) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar(theta = "y") +
+  labs(title = "Comulative Fatalities\n by Grouped Events") + 
+  geom_text(aes(y=labPos, label=scales::percent(fatalities)))
+
+# Calculate total number of injuries by group. 
+nInj_totals <- storm.data.small %>%
+  filter(YEAR > 1992) %>%
+  select(Event = EVTYPE, INJURIES) %>%
+  group_by(Event) %>%
+  summarise(num_injuries = sum(INJURIES)) %>%
+  filter(num_injuries > 0) %>%
+  rowwise() %>%
+  mutate(type = factor_EVTYPE(Event)) %>%
+  group_by(type) %>%
+  summarise(injuries = sum(num_injuries))
+
+# Pie chart 2
+p3 <- ggplot(transform(transform(nInj_totals, injuries=injuries/sum(injuries)), labPos=cumsum(injuries)-injuries/2), 
+       aes(x="", y = injuries, fill = type)) + xlab(NULL) + ylab(NULL) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar(theta = "y") +
+  labs(title = "Comulative Injuries\n by Grouped Events") + 
+  geom_text(aes(y=labPos, label=scales::percent(injuries)))
+
+grid.arrange(p2, p3, ncol=2)
+```
+
+```{r echo=FALSE, comment=NA}
+# Getting indexes for instances of heat
+heat_index <- grep("HEAT", storm.data.small$EVTYPE)
+heat_related_rates <- storm.data.small[heat_index,] %>%
+  filter(YEAR > 1992) %>%
+  select(Event = EVTYPE, INJURIES, FATALITIES) %>%
+  summarise(fatality_rate = sum(FATALITIES)/length(1993:2011), 
+            injury_rate = sum(INJURIES)/length(1993:2011))
+hrr <- round(heat_related_rates$fatality_rate) 
+# Getting indexes for instances of tornadoes and thunderstorm 
+tornado_TSTM_index <- grep("TORNADO|TORNADOES|TSTM|THUNDERSTORM", storm.data.small$EVTYPE)
+
+tornado_TSTM_related_rates <- storm.data.small[tornado_TSTM_index,] %>%
+  filter(YEAR > 1992) %>%
+  select(Event = EVTYPE, INJURIES, FATALITIES) %>%
+  summarise(fatality_rate = sum(FATALITIES)/length(1993:2011), 
+            injury_rate = sum(INJURIES)/length(1993:2011))
+trr <- round(tornado_TSTM_related_rates$fatality_rate)
+# Getting indexes for instances of floods
+flood_index <- grep("FLOOD", storm.data.small$EVTYPE)
+
+flood_related_rates <- storm.data.small[flood_index,] %>%
+  filter(YEAR > 1992) %>%
+  select(Event = EVTYPE, INJURIES, FATALITIES) %>%
+  summarise(fatality_rate = sum(FATALITIES)/length(1993:2011), 
+            injury_rate = sum(INJURIES)/length(1993:2011))
+```
+As can be seen from the chart above, heat, tornadoes/TSTM, and flood related events combined are responsible for 62.4% of the total fatalities and 69% of the total injuries reported. As expected, the rates for each of these categories increased when lumping them into their respective category. Nonetheless the order still follows, heat related events continue to be the most deadly extreme weather event in the US having `r hrr` fatalities/year followed by the Tornado/TSTM category having `r trr` fatalities/year. Tornadoes still causes the most injuries per year. 
+
+### Economic Impact
+```{r, echo=FALSE, warning=FALSE}
+# Calculate total property damage and rates. 
+# Sorts in descending order using total damage. 
+prop_totals <- storm.data.small %>%
+  filter(YEAR > 1992) %>%
+  select(Event = EVTYPE, PROPDMG_TOT) %>%
+  group_by(Event) %>%
+  summarise(total_dmg = round(sum(PROPDMG_TOT))) %>%
+  arrange(desc(total_dmg)) %>%
+  mutate(dmg_rate = total_dmg/19)
+# Format highest property damage total and rate for printing purposes. 
+propDMG1 <- paste0("$",round(prop_totals$total_dmg[1]/10^9, 1), "B")
+propRT1 <- paste0(("$"), round(prop_totals$dmg_rate[1]/10^9, 1), "B")
+
+```
+The charts below show the total damage to caused to property and the damage rates associated each severe weather event in terms of US dollars. In total, floods have caused the most damage to property having total of `r propDMG1` and an annual property damage rate of `r propRT1`. Floods causes property damage at a rate of over two times as high as hurricanes/typhoon and over three times higher than storm surge. An analyis was not performed to consider inconsistencies in data entry for this part of the analysis given the results were not likely to change much as we view in the previous section of the report. 
+
+```{r echo=FALSE, comment=NA, fig.align="left"}
+# Function to trim big numbers and format to char.
+# eg 1000 -> 1k
+comprss <- function(x) { 
+  div <- findInterval(x, c(1, 1e3, 1e6, 1e9, 1e12))
+  paste(round(x/10^(3*(div-1)), 1), 
+        c("","K","M","B","T")[div])
+}
+
+# Format prop_total for printing purposes.  
+prop_totals$total_dmg <- comprss(prop_totals$total_dmg)
+# Creating a table for printing.  
+t1 <- data.frame(prop_totals[1:15, 1:2])
+names(t1) <- c("Event", "Total\n Property\n Damage ($)")
+
+prop_rate <- prop_totals[1:15, c(1,3)]
+prop_rate$Event <- factor(prop_rate$Event, levels = prop_rate$Event, ordered = TRUE)
+prop.P <- ggplot(data = prop_rate, aes(x = Event, y= dmg_rate)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 50, hjust = 1)) + ylab("Dollars / Year") + ggtitle("Annual Property Damage Rate") + scale_y_continuous(labels = function(x){paste0(round(x/10^9, 2), "B")})
+
+tsetting <- ttheme_default(base_size = 10, base_colour = "black", parse = FALSE,
+  padding = unit(c(4, 4), "mm"))
+
+grid.arrange(tableGrob(t1, rows = NULL, theme = tsetting),
+             ggplotGrob(prop.P), 
+             ncol=2)
+```
+
+```{r echo=FALSE, comment=NA, fig.align="left"}
+crop_totals <- storm.data.small %>%
+  filter(YEAR > 1992) %>%
+  select(Event = EVTYPE, CROPDMG_TOT) %>%
+  group_by(Event) %>%
+  summarise(total_dmg = sum(CROPDMG_TOT)) %>%
+  arrange(desc(total_dmg)) %>%
+  mutate(dmg_rate = total_dmg/19)
+
+crop_totals$total_dmg <- comprss(crop_totals$total_dmg)
+t2 <- data.frame(crop_totals[1:15, 1:2]) 
+names(t2) <- c("Event", "Total\n Crop\n Damage ($)")
+
+crop_rate = crop_totals[1:15, c(1,3)]
+crop_rate$Event <- factor(crop_rate$Event, levels = crop_rate$Event, ordered = TRUE)
+crop.P <- ggplot(data = crop_rate, aes(x = Event, y= dmg_rate)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 50, hjust = 1)) + ylab("Dollars / Year") + ggtitle("Annual Crop Damage Rate") + scale_y_continuous(labels = function(x){paste0(round(x/10^6, 2), "M")})
+
+grid.arrange(tableGrob(t2, rows = NULL, theme = tsetting),
+             ggplotGrob(crop.P), 
+             ncol=2)
+```
+
+
+
