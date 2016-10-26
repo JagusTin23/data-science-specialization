@@ -3,13 +3,13 @@ Juan Agustin Melendez
 July 24, 2015  
 
 ## Introduction
-This report explores the StormData dataset as part of the Reproducible Research course of the Data Science Specialization provided by Coursera and Johns Hopkins University. The report attempt to identify which severe weather events has the highest impact in public health by analysing the rate at which these types of events causes injuries and fatalities. The economic impact of these events is also explored by analysing the damage caused to property and crop in terms of US dollars. The data was provided by the National Oceanic and Atmospheric Administration (NOAA) and contains data for severe weather events in the US from 1950-2011. 
+This report explores the StormData dataset as part of the Reproducible Research course of the Data Science Specialization provided by Coursera and Johns Hopkins University. The report attempt to identify which severe weather events has the highest impact on public health by analyzing the rate at which these types of events causes injuries and fatalities. The economic impact of these events is also explored by analyzing the damage caused to property and crop in terms of US dollars. The data was provided by the National Oceanic and Atmospheric Administration (NOAA) and contains data for severe weather events in the US from 1950-2011.
 
-A preliminary analysis of the data demonstrates that excessive heat and tornadoes have the highest anual rate of fatalities. Tornadoes have the highest rate of injuries followed by excessive heat and floods. Historically floods and droughts has caused the most damage to property and crop respectively. Nonetheless, hurricanes/typhoons have the highest rate of property damage and river floods have the highest rate of crop damage in the US. 
+A preliminary analysis of the data demonstrates that excessive heat and tornadoes have the highest annual rate of fatalities. Tornadoes have the highest rate of injuries followed by excessive heat and floods. Floods and droughts has caused the most damage to property and crop respectively. 
 
 ### Initial Exploration of Data
 
-From a histogram of the frequency of cases recorded per year, it can be seen that in the mid 1990s there is a significant increase in cases recorded. The number of cases approximately doubled in 1995 compared to 1990. Prior to 1993, the only weather event types recorded in the data were tornadoes, thunderstorm winds, and hail. In 1993 the number of unique weather event recorded increased to 40 from only 3 in the previous 10 years. Tornadoes were the only weather event recorded from 1950 to 1983. Below is a plot of cases recorded per year for the entire dataset. 
+From a histogram of the frequency of cases recorded per year, it was observed that in the mid 1990s there is a significant increase in cases recorded. The number of cases approximately doubled in 1995 compared to 1990. Prior to 1993, the only weather event types recorded in the data were tornadoes, thunderstorm winds, and hail. In 1993 the number of unique weather event recorded increased to 40 from only 3 in the previous 10 years. Tornadoes were the only weather event recorded from 1950 to 1983. Below is a plot of cases recorded per year for the entire dataset. 
 
 ![](stormData_Report_files/figure-html/unnamed-chunk-1-1.png)<!-- -->
 
@@ -40,20 +40,24 @@ The charts below show fatality and injury rates for fifteen severe weather event
 
 ![](stormData_Report_files/figure-html/fatality_plot-1.png)<!-- -->
 
-Discrepancies in entries in the EVTYPE column explained in the previous section can be observed in the charts above. As can be seen, there are four different instances of heat related weather events just in the top fifteen fatality rate chart. There are also instances where tornadoes and TSTM appear together as one entry and others where thunderstorm is abbreviated as TSTM. The same is observed throughout the dataset for other categories entered in the EVTYPE column. To evaluate the impact of these discrepancies, four different groups were created (Heat, Tornado/TSTM, Flood, and Other) encompassing four of the categories with the highest rates and one group for all the other categories. These groups were formed depending on wether key words appeared in each particular entry in the EVTYPE column.  Total sums were calculated for each group and new rates were calculated for the categories Heat, Tornado/TSTM, and Flood. These rates were analyzed to determine if different results were obtained by lumping the catefories in EVTYPE columns into groups. The chart below shows the proportion of total fatalities and injuries each group had within the dataset.  
+Discrepancies in entries in the EVTYPE column explained in the previous section can be observed in the charts above. As can be seen, there are three different instances of heat related weather events just in the top fifteen fatality rate chart. There are also instances where thunderstorm is abbreviated as TSTM and other instances where tornadoes and TSTM appear as one entry. The same is observed throughout the dataset for other categories entered in the EVTYPE column. To evaluate the impact of these discrepancies, four different groups were created (Heat, Tornado/TSTM, Flood, and Other) encompassing four of the categories with the highest rates and one group for all the other categories. These groups were formed depending on wether key words appeared in each particular entry in the EVTYPE column.  Total sums were calculated for each group and new rates were calculated for the categories Heat, Tornado/TSTM, and Flood. These rates were analyzed to determine if different results were obtained by lumping the catefories in EVTYPE columns into groups. The chart below shows the proportion of total fatalities and injuries each group had within the dataset.  
 
 ![](stormData_Report_files/figure-html/pie_chart-1.png)<!-- -->
 
 
-As can be seen from the chart above, heat, tornadoes/TSTM, and flood related events combined are responsible for 62.4% of the total fatalities and 69% of the total injuries reported. As expected, the rates for each of these categories increased when lumping them into their respective category. Nonetheless the order still follows, heat related events continue to be the most deadly extreme weather event in the US having 165 fatalities/year followed by the Tornado/TSTM category having 111 fatalities/year. Tornadoes still causes the most injuries per year. 
+As can be seen from the chart above, heat, tornadoes/TSTM, and flood related events combined are responsible for 62.4% of the total fatalities and 69% of the total injuries reported. As expected, the rates for each of these categories increased when lumping them into their respective category. Nonetheless the order still follows, heat related events continue to be the most deadly extreme weather event type in the US having 165 fatalities/year followed by the Tornado/TSTM category having 111 fatalities/year. Tornadoes still causes the most injuries per year. 
 
 ### Economic Impact
 
-The charts below show the total damage to caused to property and the damage rates associated each severe weather event in terms of US dollars. In total, floods have caused the most damage to property having total of $144.7B and an annual property damage rate of $7.6B. Floods causes property damage at a rate of over two times as high as hurricanes/typhoon and over three times higher than storm surge. An analyis was not performed to consider inconsistencies in data entry for this part of the analysis given the results were not likely to change much as we view in the previous section of the report. 
+The charts below show the total damage caused to property and the damage rates associated each severe weather event in terms of US dollars. In total, floods have caused the most damage to property having total of $144.7B and an annual property damage rate of $7.6B. Floods causes property damage at a rate of over two times as high as hurricanes/typhoon and over three times higher than storm surge.  
 
 <img src="stormData_Report_files/figure-html/unnamed-chunk-8-1.png" style="display: block; margin: auto auto auto 0;" />
 
-<img src="stormData_Report_files/figure-html/unnamed-chunk-9-1.png" style="display: block; margin: auto auto auto 0;" />
+
+
+When it comes to damage caused to crops, draught has the highest number of total damage with a total of $14B and a rate of $735M per year.  Drought causes damage at 2.5 times the rate flood causes damage to crops.  An analysis was not performed to consider inconsistencies in data entry when analyzing damage to property and crop given that the differences between the two highest rates were considerably large and results were not likely to change much as was observed in the previous section of the report. 
+
+<img src="stormData_Report_files/figure-html/unnamed-chunk-10-1.png" style="display: block; margin: auto auto auto 0;" />
 
 
 
