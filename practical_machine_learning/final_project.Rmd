@@ -1,0 +1,105 @@
+---
+title: "Practical Machine Learning: Qualitative Activity Recognition"
+author: "Juan Agustin Melendez"
+date: "Nov 21, 2015"
+output: 
+    html_document:
+        keep_md: true
+---
+
+## Introduction  
+
+As part of Coursera's Practical Machine Learning course project, this document describes a predictive model used to predict the way a subject performed a particular weight lifting excercise. The data was obtained from the Weight Lifting Exercise dataset. This document discusses how cross validation was used, the out-of-sample error rate and accuracy, and explains some of the choices made and what features were used in the prediction. 
+
+## Train Data Processing and Preparation
+
+```{r echo=TRUE, warning=FALSE, message=FALSE}
+library(caret)
+library(randomForest)
+set.seed(123)
+
+allTrain <- read.csv("pml-training.csv", header=TRUE, stringsAsFactor=FALSE, na.strings = c("NA",""," ","#DIV/0!"))
+
+# Partitioning training data
+inTrain <- createDataPartition(allTrain$classe, p=0.75, list=FALSE)
+trainSet <- allTrain[inTrain,]
+testSet <- allTrain[-inTrain,]
+
+#removing columns with NA values
+trainSet <- trainSet[, colSums(is.na(trainSet))==0]
+
+#removing columns with little significance for predictions as X, user_name, timestamp and window variables. 
+trainSet <- trainSet[, -c(1:7)]
+trainSet$classe <- factor(trainSet$classe)
+
+# Evaluating variables with near zero variance as per class notes
+nzv <- nearZeroVar(trainSet)
+nzv
+
+```
+
+Upon evaluation of the data, it appears that columns with missing values have a great proportion of missing values in them. Therefore, all columns with missing values were discarded for training and predicting purposes as they do not provide much information and any imputation would likely introduce more noise to the data. Features related to the subject's name, timestamps, and time window variables were also discarded as the purpose was to use movement information as predictive features. In an effort to further reduce the dimensionality of the data, near zero variance analysis was performed on the remaining features but none was found with near zero variance. A brief principal component analysis was performed but did not provided any added benefit to the prediction model.  
+
+## Training the Model
+
+```{r echo=TRUE, warning=FALSE, message=FALSE, cache=TRUE, fig.height=3, fig.width=4}
+
+controls <- trainControl(method ="cv", number = 3, verboseIter=FALSE)  
+rf <- train(classe ~., data=trainSet, trControl = controls)
+rf
+
+# Accuracy vs predictors tested
+plot(rf, log = "y", lwd = 2, main = "Random Forest Accuracy", ylab = "Accuracy", xlab = "Predictors")
+
+```
+
+Given its renowned performance on classification problems, random forrest was the first option considered when training the model. Originally, the default bootstrap resampling parameters were used but this method proved to be significantly more computationally intensive and required longer training times. A five-fold cross validation was first performed followed by a three-fold cross validation. Both attempts yielded an equal final model, using a mtry equal to 2 with similar accuracy. The three-fold cross validation was selected for the final model as it was several minutes faster when training the model. 
+
+# Evaluating the model on testing data
+
+```{r echo=TRUE, warning=FALSE, message=FALSE}
+features <- names(trainSet)[names(trainSet) != "classe"]
+testing <- testSet[, features]
+
+predictions <- predict(rf, newdata= testing)
+
+confusion <- confusionMatrix(testSet$classe, predictions)
+
+confusion
+
+out_of_sample_error <- round((1-confusion$overall[1])*100,2)
+
+```
+
+## Out of Sample Error
+
+The in-sample error rate ranged from 1.03% to 1.09% each time this document was compiled. The out of sample error for the final model was **`r out_of_sample_error`**%. This should not be confused with the out of bag error (OOB) which the authors (Brieman and Cutler) describe on the Random Forest documents provided online. As per the authors, in random forest, there is no need for cross validation or a separate test to get an unbiased estimate of the test error. It is estimated internally and reported as the OOB error. Since a three fold cross validation was used in the tuning parameters when training the model instead of the default bootstrap resampling, a test data set was set apart to test the models out-of-sample error. A confusion matrix was used to determine the out-of-sample accuracy (and thus the error). In general, the out-of-sample error is usually slightly higher than the in-sample error (or vice versa with accuracy) given that the model is predicting on new data with potential different variance. Nonetheless, a good model should have relatively close in-sample and out-of-sample error and accuracy. In this particular case the out-of-sample error rate was lower than the in-sample error rate that was being observed but not by much.
+
+
+## Conclusion 
+
+A random forest with a three-fold cross validation was used as the final model. The model was able to predict the classe variable with both in and out-of-sample accuracy of over 99%. Given the performance of the model and the proximity of the in and out-of-sample accuracy/error rate, no real need was found to test other models. The model was able to predict the 20 cases part of the course project submission section with an accuracy of 100%. 
+
+## Course Project Submission 
+
+```{r echo=TRUE, warning=TRUE, message=FALSE}
+
+testData <- read.csv("pml-testing.csv", header=TRUE, stringsAsFactor=FALSE, na.strings = c("NA",""," ","#DIV/0!"))
+
+testData <- testData[, features]
+
+submission_preds <- predict(rf, newdata=testData)
+
+answers <- as.character(submission_preds)
+
+pml_write_files = function(x){
+    n = length(x)
+    for(i in 1:n){
+        filename = paste0("problem_id_",i,".txt")
+        write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+    }
+}
+
+##pml_write_files(answers)
+
+```
