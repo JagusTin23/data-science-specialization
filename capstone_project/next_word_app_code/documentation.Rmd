@@ -1,0 +1,35 @@
+---
+title: "Next Word App"
+author: "Juan Agustin Melendez"
+output: html_document
+---
+
+## Overview
+
+The application uses a Stupid Backoff algorithm to predict the next word or set of words depending on the user's input. A five-gram model is used together with the Stupid Backoff algorithm to search for possible matches and their  respective frequencies. The last four words provided by the user will be used to calculate the Stupid Backoff scores if more than four words are provided, going to the lower ngram otherwise. The words with the top scores are saved and displayed upon user requests. 
+
+## Using the App 
+
+Input a word or phrase in the text box provided on the side panel and select the number of words to be displayed (up to four words). Press the "Predict Word" button and the predicted words will appear on the main panel to the right of the text input box. A profanity filter is applied by default but could otherwise not be applied by unchecking the "Remove Profanity" box.
+
+## Packages and Data 
+
+**Quanteda** is used as the main package to preprocess the data and build the ngrams. 
+
+For more information about quanteda visit [Quanteda Vignettes] (https://cran.r-project.org/web/packages/quanteda/vignettes/quickstart.html).
+
+The package **data.table** is used for fast lookup and computation of scores.
+
+The model is built with data from the [HC Corpora](http://www.corpora.heliohost.org/).
+
+Profanity list was obtain from Duncan Robertson's [github repository](https://github.com/whomwah/language-timothy/blob/master/profanity-list.txt).
+
+## Application Layout and Color Theme
+
+The layout color theme is provided by [Bootswatch.com](http://bootswatch.com/)
+
+
+       
+
+ 
+

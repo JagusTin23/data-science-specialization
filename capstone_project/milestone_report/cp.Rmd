@@ -1,0 +1,233 @@
+---
+title: "Initial Analysis of Text Data for Word Prediction Application"
+author: "Juan Agustin Melendez"
+date: "March 20, 2016"
+output: html_document
+---
+
+## Introduction
+
+This document provides an initial exploration of text data from [HC Corpora](http://www.corpora.heliohost.org/aboutcorpus.html) as part of the Capstone Project of the Data Science Specialization provided by Johns Hopkins University and Coursera.org. The Capstone Project involves developing a Shiny application that aims to predict the a word a user will write next after the user has submitted up to three words. Three files containing text from blogs, news articles, and twitter posts where evaluated to determine the size, number of lines, and an approximate word count. A sample of the data was processed and analyzed and the frequency of unigrams, bigrams, and trigrams where evaluated. Finally, a summary is given providing the steps that are being considered for building the prediction model.  
+
+## Summary of Files 
+
+For purposes of this analysis, only the English language files where examine. To avoid extended waiting times while running the R markdown file, processed data were saved into a local directory and loaded for viewing and plotting purposes. All the code used in this analysis is provided in the appendix. 
+
+The chart below describes the size, number of lines, and an approximation of word count of each file.
+
+```{r, echo=TRUE}
+summary.files <- readRDS("summaryDF.Rda")
+summary.files
+```
+
+## Frecuency of Unigrams
+
+```{r, echo=TRUE, warning=FALSE}
+library(ggplot2) 
+
+percent.stopwords <- readRDS("percent_stopwords.Rda")
+percent.stopwords <- as.character(round((100 -percent.stopwords), 1))
+percent.stopwords <- paste(percent.stopwords, "%", sep="")
+
+unigramDF.top30 <- readRDS("unigramDF.top30.Rda")
+unigrams.noswDF.top30 <- readRDS("unigrams.noswDF.top30.Rda")
+
+#Unigram plot
+
+uni.plot <- ggplot(unigramDF.top30, aes(x=reorder(Ngrams, Count),y=Count)) + geom_bar(stat="Identity", fill="turquoise") + coord_flip() + labs(x="", y= "Counts") + ggtitle("Top 30 Unigrams Including Stopwords")
+
+#Unigram plot with stopwords removed
+uni.nowd.plot <- ggplot(unigrams.noswDF.top30, aes(x=reorder(Ngrams, Count),y=Count)) + geom_bar(stat="Identity", fill="turquoise") + coord_flip() + labs(x="", y= "Counts") + ggtitle("Top 30 Unigrams with Stopwords Removed")
+
+uni.plot
+uni.nowd.plot
+
+```
+
+Stopwords in the sampeled data were analyzed to determine what proportion of the of the total sample they account for. Stopwords comprise **`r percent.stopwords`** of the total words in the sample. A quick analysis shows that the top thirty words that appear in the sampled data are all stopwords in the dictionary provided in the R package Quanteda. The range in the top thirty unigrams is approximately 3,000 to 44,000. When removing the stopwords, the range of frequency in the top thirty unigrams is approximately 1,000 to 3,000. Given that the goal of the project is to predict any word following up to three words, stopwords will have to be kept for training the model. 
+
+## Frequency of Bigrams
+
+```{r, echo=TRUE, warning=FALSE}
+bi.gramsDF.top30 <- readRDS("bi.gramsDF.top30.Rda")
+
+bi.plot <- ggplot(bi.gramsDF.top30, aes(x=reorder(Ngrams, Count),y=Count)) + geom_bar(stat="Identity", fill="turquoise") + coord_flip() + labs(x="", y= "Counts") + ggtitle("Top 30 Bigrams")
+bi.plot
+
+```
+
+## Frequency of Trigrams
+
+```{r, echo=TRUE, warning=FALSE}
+tri.gramsDF.top30 <- readRDS("tri.gramsDF.top30.Rda")
+
+tri.plot <- ggplot(tri.gramsDF.top30, aes(x=reorder(Ngrams, Count),y=Count)) + geom_bar(stat="Identity", fill="turquoise") + coord_flip() + labs(x="", y= "Counts") + ggtitle("Top 30 Trigrams")
+tri.plot
+
+```
+
+## Considerations and Moving Forward
+
+1. Further analysis is needed to determine the number of unique words needed to cover a percentage (50%, 90%, etc.) of all word instances in the language.  
+
+2. Different encoding were encountered during the analysis and were not handled properly in this analysis due to time constraints. Further processing of the data will have to be performed to account for text with different encodings when training the model.   
+
+3. The WordNet library together with the synonyms function could be used to increase coverage of words that may not be in the corpora. 
+
+4. Different subsets of the files could be used to train multiple models and compare model performance to determine optimal cut-of-points for memory size versus predictive accuracy. 
+
+5. A combination of a Markov model and a smoothing techniques (e.g. Lidstone's, Good-Turing) could be implemented in the prediction model. 
+
+## Appendix: Code Used in Data Processing
+
+```{r, echo=TRUE, eval= FALSE}
+
+library(ggplot2)
+library(dplyr)
+require(quanteda)
+library(gridExtra)
+
+#Flie paths
+blogs_path <- "./final/en_US/en_US.blogs.txt"
+news_path <- "./final/en_US/en_US.news.txt"
+twitter_path <- "./final/en_US/en_US.twitter.txt"
+#Reading files into memory
+
+blogs <- readLines(blogs_path, encoding = "UTF-8", skipNul=TRUE)
+news <- readLines(news_path, encoding = "UTF-8", skipNul=TRUE)
+twitter <- readLines(twitter_path, encoding = "UTF-8", skipNul=TRUE)
+
+#lines in files
+lines.blogs <- length(blogs)
+lines.news <- length(news)
+lines.twitter <- length(twitter)
+
+#Word Count
+blogs.WC <- sum(sapply(gregexpr("\\S+", blogs), length))
+news.WC <- sum(sapply(gregexpr("\\S+", news), length))
+twitter.WC <- sum(sapply(gregexpr("\\S+", twitter), length))
+
+#File size in megabytes 
+blogs.MB <- round((file.info(blogs_path)$size / 1e6),2)
+news.MB <- round((file.info(news_path)$size / 1e6),2)
+twitter.MB <- round((file.info(twitter_path)$size / 1e6), 2)
+
+#Sampling 10000 lines of each file
+sample.blogs <- blogs[sample(1:lines.blogs, 10000)]
+sample.news <- news[sample(1:lines.news, 10000)]
+sample.twitter <- twitter[sample(1:lines.twitter, 10000)]
+sample.combined <- c(sample.blogs, sample.news, sample.twitter)
+sample.combined.WC <- sum(sapply(gregexpr("\\S+", sample.combined), length))
+lines.sample.combined <- length(sample.combined)
+
+#writing sample files to directory 
+writeLines(sample.combined, "./samples/sample_combined.txt")
+
+#Summary dataframe
+Files = c("Blogs", "News", "Twitter")
+Lines = c(lines.blogs, lines.news, lines.twitter)
+Word.Count = c(blogs.WC, news.WC, twitter.WC)
+file.size <- c(blogs.MB, news.MB, twitter.MB)
+summary.DF <- data.frame(Files, Lines, Word.Count, file.size)
+
+colnames(summary.DF) <- c("File", "Lines", "Words", "Megabytes")
+
+saveRDS(summary.DF, file = "./summaryDF.Rda")
+
+#Profanity words from online source. 
+
+profanity <- readRDS("profanity.Rda")
+
+# Tokenization 
+corpus <- readLines("./samples/sample_combined.txt", encoding= "UTF-8", skipNul=TRUE)
+corpus <- toLower(corpus)
+
+# Tokenizing into unigrams
+unigrams <- tokenize(corpus, what = "word", removeNumbers = TRUE,
+                     removePunct = TRUE, removeSeparators = TRUE,
+                     removeTwitter = TRUE, removeHyphens = TRUE,
+                     ngrams = 1)
+
+# Removing stopwords from unigrams. 
+unigrams.no.stopwords <- removeFeatures(unigrams, stopwords("english"))
+
+# Stopword percent
+stopWord.percent <- (length(unlist(unigrams.no.stopwords))/length(unlist(unigrams))*100)
+
+#Saving percent calculation
+saveRDS(stopWord.percent, file="percent_stopwords.Rda")
+
+# Tokenizing into bigrams.
+bi.grams <- tokenize(corpus, what = "word", removeNumbers = TRUE,
+                   removePunct = TRUE, removeSeparators = TRUE,
+                   removeTwitter = TRUE, removeHyphens = TRUE,
+                   concatenator = " ", ngrams = 2, simplify = TRUE)
+
+#Tokenizing into trigrams
+tri.grams <- tokenize(corpus, what = "word", removeNumbers = TRUE,
+                     removePunct = TRUE, removeSeparators = TRUE,
+                     removeTwitter = TRUE, removeHyphens = TRUE,
+                     concatenator = " ", ngrams = 3, simplify = TRUE)
+
+
+
+#Remove profanity function
+removeProfanity <- function(input){
+    output <- input[!input %in% profanity]
+    return(output)
+}
+
+#Function that creates a data frame with aggregated Ngrams and their counts. 
+makeTop30_DF <- function(input) {
+    input <- removeProfanity(input)
+    output <- data.frame(input, stringsAsFactors = FALSE)
+    names(output) <- "Ngrams"
+    output <- output %>% 
+        group_by(Ngrams) %>% 
+        mutate(Count = n()) %>%  
+        ungroup() %>% 
+        arrange(desc(Count)) %>% 
+        unique()
+    output <- output[1:30,]
+    output$Ngrams <- factor(output$Ngrams, levels = output$Ngrams, ordered = TRUE)
+    return(output)
+}
+
+#Creating top 30 unigrams data frame
+unigramDF.top30 <- makeTop30_DF(unlist(unigrams))        
+
+# Creating top 30 unigrams with stopwords removed data frame
+unigrams.noswDF.top30 <- makeTop30_DF(unlist(unigrams.no.stopwords))
+
+#Creating top 30 bigrams data frame
+bi.gramsDF.top30 <- makeTop30_DF(bi.grams)
+
+#Creating top 30 trigrams data frame
+tri.gramsDF.top30 <- makeTop30_DF(tri.grams)
+
+#Saving ngram data frames into directory for later use. 
+saveRDS(unigramDF.top30, file = "./unigramDF.top30.Rda")
+saveRDS(unigrams.noswDF.top30, file = "./unigrams.noswDF.top30.Rda")
+saveRDS(bi.gramsDF.top30, file = "./bi.gramsDF.top30.Rda")
+saveRDS(tri.gramsDF.top30, file = "./tri.gramsDF.top30.Rda")
+
+#Unigram plot
+
+uni.plot <- ggplot(unigramDF.top30, aes(x=reorder(Ngrams, Count),y=Count)) + geom_bar(stat="Identity", fill="turquoise") + coord_flip() + labs(x="", y= "Counts") + ggtitle("Top 30 Unigrams Including Stopwords")
+
+#Unigram plot with stopwords removed
+uni.nowd.plot <- ggplot(unigrams.noswDF.top30, aes(x=reorder(Ngrams, Count),y=Count)) + geom_bar(stat="Identity", fill="turquoise") + coord_flip() + labs(x="", y= "Counts") + ggtitle("Top 30 Unigrams with Stopwords Removed")
+
+
+#Bigram Plot
+bi.plot <- ggplot(bi.gramsDF.top30, aes(x=reorder(Ngrams, Count),y=Count)) + geom_bar(stat="Identity", fill="turquoise") + coord_flip() + labs(x="", y= "Counts") + ggtitle("Top 30 Bigrams")
+bi.plot
+
+#Trigram Plot
+tri.plot <- ggplot(tri.gramsDF.top30, aes(x=reorder(Ngrams, Count),y=Count)) + geom_bar(stat="Identity", fill="turquoise") + coord_flip() + labs(x="", y= "Counts") + ggtitle("Top 30 Trigrams")
+
+```
+
+
+
+
