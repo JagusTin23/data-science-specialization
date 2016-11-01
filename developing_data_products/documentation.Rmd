@@ -1,0 +1,31 @@
+---
+title: "Presidential Inauguration Speech Word Cloud"
+author: "Juan Agustin Melendez"
+output: html_document
+---
+
+## Overview
+
+This application allows a user to do a basic exploration of a presidential inaugural speech by plotting a word cloud of the words with the highest frequencies in the inaugural speech for a selected president. The application aims to allow a user to get a feel for a period in time, visually demonstrate how the political language may have evolved or how presidential candidates expressed themselves over the years. Ultimately, a user may potentially get a feel for the sentiment or tone of the speech given.  
+
+## Using the App 
+
+In a straight forward and self explanatory manner, the application allows the user to select a year/president from the drop-down menu and select the number of words the users wants the word cloud to display from a slider input. The slider input ranges from 10 to 50 in increments of five units. The words with higher frequencies will appear with larger fonts in the word cloud. For example, if the user select "2013-Obama, Barack" and 10 in the user input fields, the ten words with the highest frequencies in President Obama's 2013 inaugural speech will be plotted in the form of a word cloud.   
+
+## Packages and Data 
+
+**Quanteda** is used as the main package to process the text for this application. Quanteda is a natural language processing (NLP) package that provides a comprehensive framework with text processing tools such as tokenization, stopword and punctuation removal, document frequency matrix, as well as many other NLP features. The data used in this application "inaugCorpus" is included within quanteda and includes data from 57 presidential inaugural speeches. The "wordcloud" R package is a dependency of quanteda and is used for creating the word cloud. 
+
+For more information about quanteda visit: <https://cran.r-project.org/web/packages/quanteda/vignettes/quickstart.html>  
+
+For more information about wordcloud visit: <https://cran.r-project.org/web/packages/wordcloud/wordcloud.pdf>  
+
+## Application Layout and Color Theme
+
+The layout color theme is provided by [Bootswatch.com](http://bootswatch.com/)
+
+## Disclaimers
+
+Some presidents inaugural speeches were not included in quanteda's "inaugCorpus" and therefore do not appear as options in the drop-down menu. Some words may not be displayed depending on the browser used to open the app.
+ 
+
