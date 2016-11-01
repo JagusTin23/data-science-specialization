@@ -1,0 +1,71 @@
+---
+title: 'Statistical Inference Course Project: Part 2'
+author: "Juan Agustin Melendez"
+date: "July 21, 2015"
+output: pdf_document
+---
+
+## Description
+The second part of the course project will focus on performing an inferential analysis on the ToothGrowth data provide in the R datasets package. Confidence intervals and hypothesis testing will be performed to determine the effects of vitamin C on tooth growth in guinea pigs.
+
+## Loading and Summarizing Data
+
+```{r echo=TRUE}
+library(datasets)
+TG <- ToothGrowth
+summary(TG)
+str(TG)
+# Verifying groups by supplement and dose levels. 
+TG$dose <- as.factor(TG$dose) 
+table(TG$dose, TG$supp)
+```
+
+
+
+## Visualization of Data
+
+```{r boxplots, echo=TRUE, warning=FALSE, fig.height=4, fig.width=8}
+library(ggplot2);library(gridExtra)
+# Plotting data by dose levels
+d <- ggplot(data=TG, aes(x=dose, y=len)) + geom_boxplot(aes(fill=dose))
+# Plotting data by supp levels
+m <- ggplot(data=TG, aes(x=supp, y=len)) + geom_boxplot(aes(fill=supp))
+grid.arrange(d, m, ncol=2)
+```
+
+## Hypothesis testing using T tests. 
+First, a comparison is going to be made to determine if the delivery method has any effects on tooth growth. Then tooth growth is going to be evaluated by dosage, comparing doses 0.5-1, 0.5-2, and, 1-2. It is assumed that the variance between the tested groups are not equal.
+
+###  1. Testing for supplement type vs length
+
+```{r echo=TRUE}
+t.test(len ~ supp, data=TG)
+```
+
+As can be seen, the confidence interval [-0.171, 7.571] includes 0 and p values is 0.06. This indicates that there is not enough evidence to reject the null hypothesis that the supplement type has no effects on tooth growth.
+
+### 2. Testing for dose vs length
+
+```{r echo=TRUE}
+# subsetting ToothGrowth data by dosage groups
+TG_0.5.1 <- subset(TG, dose %in% c(0.5, 1))
+TG_0.5.2 <- subset(TG, dose %in% c(0.5, 2))
+TG_1.2 <- subset(TG, dose %in% c(1, 2))
+# Testing dose group 0.5-1
+t.test(len ~ dose, data=TG_0.5.1)
+# Testing dose group 0.5-2
+t.test(len ~ dose, data=TG_0.5.2)
+# Testing dose group 1-2
+t.test(len ~ dose, data=TG_1.2)
+```
+
+P values for every group tested are below 0.05 and the confidence interval does not include zero. This indicates that there is positive correlation between dose and length. Further more the value of t is very small (t = -11.799) when testing between the groups with dose 0.5 and 2 than in the other two groups suggesting that the evidence is pretty strong.  
+
+## Summary
+When comparing delivery method with tooth length, it was found that there is not sufficient evidence to reject the null hypothesis that supplement type has no effects on tooth growth. The confidence interval included zero and p was above 0.05.
+
+When testing between dosage levels, all the tests performed between each group had p values below 0.05 and confidence intervals did not included zero. This suggests that on average, tooth length in guinea pigs increased with an increase in dosage for the guinea pigs in the experiment. 
+
+There is little documentation provided for the data in terms of how the experiment was performed therefore, any analysis performed on this data set is not deterministic. There is no data provided for a control group (what is the tooth growth rate on guinea pigs with no supplement?). For the purpose of this analysis, it is assumed that the only difference in guinea pig diet was that of orange juice vs vitamin C supplement at different dose levels. Also, different variance for each group were assumed when performing the t test.  
+
+
