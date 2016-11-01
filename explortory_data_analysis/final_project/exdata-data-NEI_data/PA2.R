@@ -1,4 +1,3 @@
-setwd("/Users/Tin/Desktop/rcoursera/Exploratory_DA/PA2/exdata-data-NEI_data")
 library(dplyr)
 library(ggplot2)
 
