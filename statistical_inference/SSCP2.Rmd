@@ -10,7 +10,7 @@ The second part of the course project will focus on performing an inferential an
 
 ## Loading and Summarizing Data
 
-```{r echo=TRUE}
+```{r echo=TRUE, comment=''}
 library(datasets)
 TG <- ToothGrowth
 summary(TG)
@@ -24,7 +24,7 @@ table(TG$dose, TG$supp)
 
 ## Visualization of Data
 
-```{r boxplots, echo=TRUE, warning=FALSE, fig.height=4, fig.width=8}
+```{r boxplots, echo=TRUE, warning=FALSE, fig.height=4, fig.width=8, comment=''}
 library(ggplot2);library(gridExtra)
 # Plotting data by dose levels
 d <- ggplot(data=TG, aes(x=dose, y=len)) + geom_boxplot(aes(fill=dose))
@@ -38,7 +38,7 @@ First, a comparison is going to be made to determine if the delivery method has 
 
 ###  1. Testing for supplement type vs length
 
-```{r echo=TRUE}
+```{r echo=TRUE, comment=''}
 t.test(len ~ supp, data=TG)
 ```
 
@@ -46,7 +46,7 @@ As can be seen, the confidence interval [-0.171, 7.571] includes 0 and p values 
 
 ### 2. Testing for dose vs length
 
-```{r echo=TRUE}
+```{r echo=TRUE, comment=''}
 # subsetting ToothGrowth data by dosage groups
 TG_0.5.1 <- subset(TG, dose %in% c(0.5, 1))
 TG_0.5.2 <- subset(TG, dose %in% c(0.5, 2))
